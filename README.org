@@ -18,3 +18,22 @@ To enable as many people as possible to run their own Monero node, along with so
 - Installation & config all done through web UI (but can use typical commandline methods if you want)
 - One-click updates, which include all signature verifications, as well as backing up the previous version and rolling back if needed.
 - Optional historical data collection & graphing (connected peers, mempool info, network difficulty / target / hashrate, etc)
+
+* Distribution
+- Github releases
+- Regno nodes could optionally serve as torrent seeders for the latest release.
+
+* Hardware
+Probably recommend ODROID HC2 with a 1TB SSD? Support RPi 4, but discourage usage because no CPU crypto extensions.
+
+* Tech
+- Elixir backend for interacting with monero RPC, and storing historical data in postgres
+- Postgresql to store historical data, using LISTEN and NOTIFY to update live
+- Phoenix LiveView frontend, with some updates coming from backend and some from postgresql
+- Python3 and bash for all setup scripts
+- Nginx to sit in front of all web stuff
+- Fail2ban to sit in front of all network stuff
+- Does this all go inside Docker containers? Or provide a shell script that installs everything on Armbian? Or... both??
+
+* Licensing
+- Probably need to figure out what license to use that will accomodate all of the other projects used.
