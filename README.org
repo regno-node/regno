@@ -13,6 +13,7 @@ To enable as many people as possible to run their own Monero node, along with so
 - Easy i2pzero install & configuration
 - Easy monero-pool setup, along with custom web UI
 - Easy monero-lws setup
+- Host your own MyMonero web wallet instance against monero-lws??
 - Atomic swap daemon management
 - Haveno integration
 - Installation & config all done through web UI (but can use typical commandline methods if you want)
