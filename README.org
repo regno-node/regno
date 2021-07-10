@@ -1,1 +1,19 @@
+* What is Regno?
+Currently... vaporware!
 
+* What is the goal of Regno?
+To enable as many people as possible to run their own Monero node, along with software that integrates with Monero in a way that maximizes personal autonomy.
+
+* What are some pie-in-the-sky features planned for Regno?
+- Modular: only install what you want. If you don't want a particular feature, it is not even downloaded.
+- Web UI accessible via local network or via tor onion site / i2p eepsite
+- Live dashboard with node & network info
+- Easy tor install & configuration
+- Easy i2pzero install & configuration
+- Easy monero-pool setup, along with custom web UI
+- Easy monero-lws setup
+- Atomic swap daemon management
+- Haveno integration
+- Installation & config all done through web UI (but can use typical commandline methods if you want)
+- One-click updates, which include all signature verifications, as well as backing up the previous version and rolling back if needed.
+- Optional historical data collection & graphing (connected peers, mempool info, network difficulty / target / hashrate, etc)
