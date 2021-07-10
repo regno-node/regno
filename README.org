@@ -29,7 +29,7 @@ The idea is for Regno to exist in a dedicated environment. This could be single-
 - Regno nodes could optionally serve as torrent seeders for the latest release.
 
 * Hardware
-Probably recommend ODROID HC2 with a 1TB SSD? Support RPi 4, but discourage usage because no CPU crypto extensions.
+Probably recommend ODROID HC2 with a 1TB SSD? Support RPi 4, but discourage usage because no CPU crypto extensions (super-slow chain sync)
 
 * Tech
 - Elixir backend for interacting with monero RPC, and storing historical data in postgres
