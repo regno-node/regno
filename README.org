@@ -6,7 +6,7 @@ To enable as many people as possible to run their own sovereign Monero node, alo
 
 The project name ("realm" in Esperanto) was chosen to reflect this goal: to become the master of your own realm.
 
-The idea is for Regno to exist in a dedicated environment. This could be single-board-computer (ODROID, RPi4, etc), VPS, a NUC, a docker container on your desktop... etc. Dedicated hardware is encouraged but not a hard requirement.
+The idea is for Regno to exist in a dedicated environment. This could be single-board-computer (ODROID, RPi4, etc), a VPS, a NUC, a VM on your desktop... etc. Dedicated hardware is encouraged but not a hard requirement.
 
 * What are some pie-in-the-sky features planned for Regno?
 - Run monerod, duh
