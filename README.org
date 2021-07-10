@@ -5,6 +5,7 @@ Currently... vaporware!
 To enable as many people as possible to run their own Monero node, along with software that integrates with Monero in a way that maximizes personal autonomy.
 
 * What are some pie-in-the-sky features planned for Regno?
+- Run monerod, duh
 - Modular: only install what you want. If you don't want a particular feature, it is not even downloaded.
 - Web UI accessible via local network or via tor onion site / i2p eepsite
 - Live dashboard with node & network info
