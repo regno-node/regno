@@ -38,7 +38,7 @@ Probably recommend ODROID HC2 with a 1TB SSD? Support RPi 4, but discourage usag
 - Python3 and bash for all setup scripts
 - Nginx to sit in front of all web stuff
 - Fail2ban to sit in front of all network stuff
-- Does this all go inside Docker containers? Or provide a shell script that installs everything on Armbian? Or... both??
+- Does this all go inside Docker containers, with shell scripts to set them all up and patch them together? Hmm....
 
 * Licensing
 - Probably need to figure out what license to use that will accomodate all of the other projects used.
