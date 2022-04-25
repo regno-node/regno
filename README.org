@@ -1,6 +1,3 @@
-* What is Regno?
-Currently... vaporware!
-
 * What is the goal of Regno?
 To enable as many people as possible to run their own sovereign Monero node, along with software that integrates with Monero in a way that maximizes personal autonomy.
 
@@ -9,36 +6,37 @@ The project name ("realm" in Esperanto) was chosen to reflect this goal: to beco
 The idea is for Regno to exist in a dedicated environment. This could be single-board-computer (ODROID, RPi4, etc), a VPS, a NUC, a VM on your desktop... etc. Dedicated hardware is encouraged but not a hard requirement.
 
 * What are some pie-in-the-sky features planned for Regno?
-- Run monerod, duh
+- Run monerod
 - Modular: only install what you want. If you don't want a particular feature, it is not even downloaded.
-- Web UI accessible via local network or via tor onion site / i2p eepsite
+- Web UI accessible via local network or via tor onion site
+- Easy updates (including signature verification), automatically backing up the previous version and allowing rollback if needed.
 - Live dashboard with node & network info
 - Easy tor install & configuration
-- Easy i2pzero install & configuration
-- Easy monero-pool setup, along with custom web UI
-- Easy monero-lws setup
-- Host your own MyMonero web wallet instance against monero-lws??
-- Atomic swap daemon management
-- Haveno integration
-- Installation & config all done through web UI (but can use typical commandline methods if you want)
-- One-click updates, which include all signature verifications, as well as backing up the previous version and rolling back if needed.
+- Easy p2pool setup
+- Easy Haveno install / integration
+- Atomic swap daemon management & UI
+- Host your own MyMonero web wallet instance against your own monero-lws
+- Configurable through web UI (but can always config through the commandline if you prefer)
 - Optional historical data collection & graphing (connected peers, mempool info, network difficulty / target / hashrate, etc)
+- Promethus dashboard?
+- i2p-zero setup?
+- Make setup even easier for small dedicated boards - provide an .img file based on Manjaro-ARM?
 
 * Distribution
 - Github releases
-- Regno nodes could optionally serve as torrent seeders for the latest release.
+- Regno nodes could optionally serve as torrent seeders for the latest release?
 
 * Hardware
-Probably recommend ODROID HC2 with a 1TB SSD? Support RPi 4, but discourage usage because no CPU crypto extensions (super-slow chain sync)
+Recommend ODROID HC2 with at least 1TB SSD. Support RPi 4, but discourage usage because no CPU crypto extensions (super-slow chain sync)
 
 * Tech
-- Elixir backend for interacting with monero RPC, and storing historical data in postgres
-- Postgresql to store historical data, using LISTEN and NOTIFY to update live
+- Run within Docker containers, orchestrate with docker-compose & scripts
+- Postgresql to store historical data, using LISTEN and NOTIFY to update live. Or can we get away with sqlite?
 - Phoenix LiveView frontend, with some updates coming from backend and some from postgresql
+- Elixir backend for interacting with monerod RPC, and storing historical data in postgres
 - Python3 and bash for all setup scripts
 - Nginx to sit in front of all web stuff
 - Fail2ban to sit in front of all network stuff
-- Does this all go inside Docker containers, with shell scripts to set them all up and patch them together? Hmm....
 
 * Licensing
-- Probably need to figure out what license to use that will accomodate all of the other projects used.
+- MIT
