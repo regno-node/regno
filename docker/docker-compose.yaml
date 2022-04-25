@@ -1,0 +1,41 @@
+version: "3.7"
+
+services:
+  monerod:
+    image: "regno/monerod:${REGNO_MONEROD_VERSION}"
+    build:
+      context: ./monerod
+      args:
+        REGNO_MONEROD_VERSION: ${REGNO_MONEROD_VERSION}
+        REGNO_UBUNTU_VERSION: ${REGNO_UBUNTU_VERSION}
+    restart: always
+    volumes:
+      - data-monerod:/home/monero/.bitmonero
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "10"
+    ports:
+      - 18080:18080
+      - 18081:18081
+    networks:
+      regnonet:
+        ipv4_address: ${NET_REGNO_MONEROD_IPV4}
+
+networks:
+  regnonet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.28.0.0/16
+  dmznet:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.29.0.0/16
+
+volumes:
+  data-monerod:
