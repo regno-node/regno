@@ -23,6 +23,33 @@ services:
       regnonet:
         ipv4_address: ${NET_REGNO_MONEROD_IPV4}
 
+  p2pool:
+    image: "regno/p2pool:${REGNO_P2POOL_VERSION}"   
+    build:
+      context: ./p2pool
+      args:
+        REGNO_P2POOL_VERSION: ${REGNO_P2POOL_VERSION}
+        REGNO_UBUNTU_VERSION: ${REGNO_UBUNTU_VERSION}
+    networks:
+      regnonet:
+        ipv4_address: ${NET_REGNO_P2POOL_IPV4}
+    ports:
+      - ${P2POOL_STRATUM_PORT}:3333/tcp
+      - 37888:37888/tcp
+      - 37889:37889/tcp
+    volumes:
+      - p2pool:/home/p2pool/.p2pool:rw
+      - /dev/null:/home/p2pool/.p2pool/p2pool.log:rw
+      - /dev/hugepages:/dev/hugepages:rw
+    depends_on:
+      - monerod
+    restart: unless-stopped
+    command: >-
+      --host monerod
+      --wallet ${P2POOL_WALLET_ADDRESS}
+      --loglevel ${P2POOL_LOGLEVEL}
+      {$P2POOL_MINI}
+
 networks:
   regnonet:
     driver: bridge
@@ -39,3 +66,4 @@ networks:
 
 volumes:
   data-monerod:
+  p2pool:
