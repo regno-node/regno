@@ -52,10 +52,9 @@ USER monero
 WORKDIR /home/monero
 COPY --chown=monero:monero --from=build /monero/build/Linux/*/release/bin/monerod /usr/local/bin/monerod
 
-# Expose p2p and RPC ports
-EXPOSE 18080
-EXPOSE 18081
+# Expose p2p, RPC, and ZMQ ports
+EXPOSE 18080, 18081, 18083
 
 # Start monerod with required --non-interactive flag and sane defaults that are overridden by user input (if applicable)
 ENTRYPOINT ["monerod"]
-CMD ["--p2p-bind-ip=0.0.0.0", "--p2p-bind-port=18080", "--rpc-bind-ip=0.0.0.0", --rpc-bind-port=18081", "--non-interactive", "--confirm-external-bind"]
+CMD ["--p2p-bind-ip=0.0.0.0", "--p2p-bind-port=18080", "--rpc-bind-ip=0.0.0.0", --rpc-bind-port=18081", "--non-interactive", "--confirm-external-bind", "--zmq-pub tcp://0.0.0.0:18083", "--enable-dns-blocklist"]
