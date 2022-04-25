@@ -27,13 +27,13 @@ WORKDIR /monero
 
 # Git pull Monero source at specified tag/branch
 ARG REGNO_MONEROD_VERSION
-RUN git config --global https.postBuffer 52488000 \
+RUN git config --global https.postBuffer 2147483648 \
     && git clone --recursive --depth 1 --branch ${REGNO_MONEROD_VERSION} \
     https://github.com/monero-project/monero . \
     && git submodule init && git submodule update
 
 # Make static Monero binaries
-RUN make -j8 release-static
+RUN make -j$(nproc) release-static
 
 # Clean Ubuntu layer for the runtime image
 FROM ubuntu:${REGNO_UBUNTU_VERSION}
