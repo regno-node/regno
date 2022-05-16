@@ -20,8 +20,10 @@ RUN set -e && \
 
 WORKDIR /usr/src/p2pool
 ARG REGNO_P2POOL_VERSION
-RUN git config --global https.postBuffer 2147483648 && \
-    git clone --recursive --depth 1 --branch ${REGNO_P2POOL_VERSION} https://github.com/SChernykh/p2pool.git . && \
+RUN git config --global https.postBuffer 2048M && \
+    git config --global http.maxRequestBuffer 1024M && \
+    git config --global core.compression 0 && \
+    git clone --recursive --depth 1 --branch ${REGNO_P2POOL_VERSION} --shallow-submodules https://github.com/SChernykh/p2pool.git . && \
     mkdir build && \
     cd build && \
     cmake .. && \
