@@ -1,56 +1,88 @@
+ARG REGNO_UBUNTU_VERSION
+
+# Use ubuntu as base for builder stage image
 ARG REGNO_MONEROD_VERSION
-ARG REGNO_ALPINE_VERSION
+FROM regno/monerod-build:${REGNO_MONEROD_VERSION} as builder
 
-FROM regno/monerod-build:${REGNO_MONEROD_VERSION} as build
-RUN set -ex && apk add --update --no-cache curl-dev hidapi-dev patch zip
-RUN git clone --depth 1 \
-    https://github.com/moneroexamples/onion-monero-blockchain-explorer.git \
-    /monero/onion-monero-blockchain-explorer
+# Install dependencies for xmrblocks compilation
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends \
+    git \
+    build-essential \
+    cmake \
+    miniupnpc \
+    graphviz \
+    doxygen \
+    pkg-config \
+    ca-certificates \
+    zip \
+    libboost-all-dev \
+    libunbound-dev \
+    libunwind8-dev \
+    libssl-dev \
+    libcurl4-openssl-dev \
+    libgtest-dev \
+    libreadline-dev \
+    libzmq3-dev \
+    libsodium-dev \
+    libhidapi-dev \
+    libhidapi-libusb0 \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN ln -s /monero ~/monero
-
-# Get rid of backtrace calls - doesn't work with musl / alpine
-# building monerod with -DELPP_FEATURE_CRASH_LOG doesn't fix this
-# for some reason, hence the patch.
-WORKDIR /monero
-COPY ./remove_backtrace.patch .
-RUN patch -p1 < remove_backtrace.patch
-RUN cd build/release/external/easylogging++ && make clean && make
-
-WORKDIR /monero/onion-monero-blockchain-explorer/build
-
+# Set compilation environment variables
 ENV CFLAGS='-fPIC'
 ENV CXXFLAGS='-fPIC'
 ENV USE_SINGLE_BUILDDIR 1
 ENV BOOST_DEBUG         1
 
+WORKDIR /root
+
+# Clone and cmake/make xmrblocks with all available threads
+RUN git clone --depth 1 --branch master \
+    https://github.com/moneroexamples/onion-monero-blockchain-explorer.git \
+    /root/onion-monero-blockchain-explorer
+WORKDIR /root/onion-monero-blockchain-explorer/build
 RUN cmake .. && make -j$(nproc)
 
 # Use ldd and awk to bundle up dynamic libraries for the final image
 RUN zip /lib.zip $(ldd xmrblocks | grep -E '/[^\ ]*' -o)
 
-# Build final image
-ARG REGNO_ALPINE_VERSION
-FROM alpine:${REGNO_ALPINE_VERSION}
-RUN set -ex && apk --update --no-cache upgrade
-RUN set -ex && apk add --update --no-cache unzip
+ARG REGNO_UBUNTU_VERSION
+FROM ubuntu:${REGNO_UBUNTU_VERSION}
 
-COPY --from=build /lib.zip .
+# Added DEBIAN_FRONTEND=noninteractive to workaround tzdata prompt on installation
+ENV DEBIAN_FRONTEND="noninteractive"
+
+# Install unzip to handle bundled libs from builder stage
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends unzip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /lib.zip .
 RUN unzip -o lib.zip && rm -rf lib.zip
 
-RUN adduser -Ds /bin/bash explorer && \
-    mkdir -p /home/explorer/.bitmonero && \
-    chown -R explorer:explorer /home/explorer/.bitmonero
-USER explorer
+# Add user and setup directories for monerod and xmrblocks
+RUN useradd -ms /bin/bash monero \
+    && mkdir -p /home/monero/.bitmonero \
+    && chown -R monero:monero /home/monero/.bitmonero
+USER monero
 
-WORKDIR /home/explorer
-COPY --chown=explorer:explorer --from=build /monero/onion-monero-blockchain-explorer/build/xmrblocks .
-COPY --chown=explorer:explorer --from=build /monero/onion-monero-blockchain-explorer/build/templates ./templates/
+# Switch to home directory and install newly built xmrblocks binary
+WORKDIR /home/monero
+COPY --chown=monero:monero --from=builder /root/onion-monero-blockchain-explorer/build/xmrblocks .
+COPY --chown=monero:monero --from=builder /root/onion-monero-blockchain-explorer/build/templates ./templates/
 
-# Expose volume for lmdb access by xmrblocks
-VOLUME /home/explorer/.bitmonero
-EXPOSE 8081 
+# Expose volume used for lmdb access by xmrblocks
+VOLUME /home/monero/.bitmonero
+
+# Expose default explorer http port
+EXPOSE 8081
+
 ENTRYPOINT ["/bin/sh", "-c"]
 
 # Set sane defaults that are overridden if the user passes any commands
-CMD ["./xmrblocks --enable-json-api --enable-autorefresh-option --enable-pusher -b /home/explorer/.bitmonero"]
+CMD ["./xmrblocks --enable-json-api --enable-autorefresh-option  --enable-pusher"]
