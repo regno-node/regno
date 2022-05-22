@@ -3,28 +3,28 @@ To enable as many people as possible to run their own sovereign Monero node, alo
 
 The project name ("realm" in Esperanto) was chosen to reflect this goal: to become the master of your own realm.
 
-The idea is for Regno to exist in a dedicated environment. This could be single-board-computer (ODROID, RPi4, etc), a VPS, a NUC, a VM on your desktop... etc. Dedicated hardware is encouraged but not a hard requirement.
+You will be able to run Regno on a single-board-computer (ODROID, RPi4, etc), a VPS, a NUC, your desktop... etc. Dedicated hardware is encouraged but not a hard requirement.
 
 * What are some pie-in-the-sky features planned for Regno?
 - Run monerod
 - Modular: only install what you want. If you don't want a particular feature, it is not even downloaded.
-- Web UI accessible via local network or via tor onion site
-- Easy updates (including signature verification), automatically backing up the previous version and allowing rollback if needed.
 - Live dashboard with node & network info
-- Easy tor install & configuration
+- Automatic creation of tor hidden services for web UI, monerod RPC, etc.
+- Easy updates (including signature verification), automatically backing up the previous version and allowing rollback if needed.
 - Easy p2pool setup
 - Easy Haveno install / integration
-- Atomic swap daemon management & UI
+- Easy setup of atomic swap daemon & UI
 - Host your own MyMonero web wallet instance against your own monero-lws
-- Configurable through web UI (but can always config through the commandline if you prefer)
+- Configurable through web UI (and can always config through the commandline if you prefer)
 - Optional historical data collection & graphing (connected peers, mempool info, network difficulty / target / hashrate, etc)
 - Promethus dashboard?
-- i2p-zero setup?
+- Automatic i2p setup?
 - Make setup even easier for small dedicated boards - provide an .img file based on Manjaro-ARM?
+- Optional IPFS node?
 
 * Distribution
 - Github releases
-- Regno nodes could optionally serve as torrent seeders for the latest release?
+- Regno nodes could (if opted-in) serve as torrent seeders / IPFS nodes for the latest release?
 
 * Hardware
 Recommend ODROID HC2 with at least 1TB SSD. Support RPi 4, but discourage usage because no CPU crypto extensions (super-slow chain sync)
@@ -34,9 +34,9 @@ Recommend ODROID HC2 with at least 1TB SSD. Support RPi 4, but discourage usage 
 - Postgresql to store historical data, using LISTEN and NOTIFY to update live. Or can we get away with sqlite?
 - Phoenix LiveView frontend, with some updates coming from backend and some from postgresql
 - Elixir backend for interacting with monerod RPC, and storing historical data in postgres
-- Python3 and bash for all setup scripts
+- bash for all setup scripts
 - Nginx to sit in front of all web stuff
-- Fail2ban to sit in front of all network stuff
+- Fail2ban to sit in front of all exposed network stuff
 
 * Licensing
 - MIT
