@@ -14,6 +14,12 @@ REGNO_CONFIG_PATH="$DIR/docker/regno.conf"
 # and build args not being passed correctly to the override compose files' Dockerfiles.
 cd "$(dirname "${BASH_SOURCE[0]}")/docker"
 
+if [[ ! -f /var/run/docker.sock ]]; then
+    echo "Docker daemon not running. Attempting to start."
+    systemctl start docker
+    if [[ ! $? ]]; then echo "Failed to start docker, exiting..."; exit 1; fi
+fi
+
 source_file() {
   if [ -f "$1" ]; then
     source "$1"
@@ -79,7 +85,7 @@ setup_enable_services() {
             "tor" "Tor" on \
             "explorer" "Monero blockchain explorer" on \
             "p2pool" "P2Pool daemon" on 2>results
-    dialogResult = $?
+    dialogResult=$?
     if [[ $dialogResult ]]; then 
         REGNO_MONEROD_ENABLE=no
         REGNO_EXPLORER_ENABLE=no
@@ -151,16 +157,16 @@ docker_build() {
 docker_up() {
     if [[ check_docker -ne 0 ]] ; then return; fi
     yamlFiles=$(get_yaml_run_files)
-    eval "docker-compose $yamlFiles up -d --force-recreate"
+    eval "docker-compose $yamlFiles up -d --force-recreate --remove-orphans"
 }
 
 start() {
     if [[ check_docker -ne 0 ]] ; then return; fi
-    isRunning=$(docker inspect --format="{{.State.Running}}" monerod 2> /dev/null)
+    isRunning=$(docker inspect --format="{{.State.Running}}" regno/monerod:$REGNO_MONEROD_VERSION 2> /dev/null)
 
     if [ $? -eq 1 ] || [ "$isRunning" == "false" ]; then
         echo "Starting Regno."
-        docker_up --remove-orphans
+        docker_up
     else
         echo "Regno is already running."
     fi
@@ -184,12 +190,12 @@ setup() {
         exit 1
     fi
 
-    result=setup_enable_services
-    if [[ ! $result ]]; then echo "Setup cancelled. Configuration has NOT been updated." && exit 1; fi
+    setup_enable_services
+    if [[ ! $? ]]; then echo "Setup cancelled. Configuration has NOT been updated." && exit 1; fi
 
     write_config
     docker_build
-    docker_start
+    docker_up
 }
 
 # Clean-up (remove old docker images)
@@ -229,7 +235,7 @@ subcommand=$1; shift
 case "$subcommand" in
     setup   ) setup;;
     build   ) docker_build;;
-    start   ) docker_up;;
+    start   ) start;;
     stop    ) docker_stop;;
     restart ) docker_restart;;
     onion   ) onion;;
