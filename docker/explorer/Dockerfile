@@ -37,12 +37,14 @@ ENV BOOST_DEBUG         1
 
 WORKDIR /root
 
+ARG REGNO_EXPLORER_COMMIT
 # Clone and cmake/make xmrblocks with all available threads
 RUN git clone --depth 1 --branch master \
     https://github.com/moneroexamples/onion-monero-blockchain-explorer.git \
     /root/onion-monero-blockchain-explorer
 WORKDIR /root/onion-monero-blockchain-explorer/build
-RUN cmake .. && make -j$(nproc)
+RUN test `git rev-parse HEAD` = ${REGNO_EXPLORER_COMMIT} || exit 1 && \
+    cmake .. && make -j$(nproc)
 
 # Use ldd and awk to bundle up dynamic libraries for the final image
 RUN zip /lib.zip $(ldd xmrblocks | grep -E '/[^\ ]*' -o)
@@ -53,15 +55,15 @@ FROM regno-ubuntu:${REGNO_UBUNTU_VERSION}
 # Added DEBIAN_FRONTEND=noninteractive to workaround tzdata prompt on installation
 ENV DEBIAN_FRONTEND="noninteractive"
 
-# Install unzip to handle bundled libs from builder stage
-RUN apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install -y --no-install-recommends unzip \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-
 COPY --from=builder /lib.zip .
-RUN unzip -o lib.zip && rm -rf lib.zip
+
+# Install unzip to handle bundled libs from builder stage
+RUN apt-get install -y --no-install-recommends unzip \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && unzip -o lib.zip \
+    && rm -rf lib.zip \
+    && apt-get purge -y unzip
 
 # Add user and setup directories for monerod and xmrblocks
 RUN useradd -ms /bin/bash monero \

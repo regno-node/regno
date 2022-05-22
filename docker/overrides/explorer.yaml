@@ -9,6 +9,7 @@ services:
       args:
         REGNO_MONEROD_VERSION: ${REGNO_MONEROD_VERSION:?err}
         REGNO_UBUNTU_VERSION: ${REGNO_UBUNTU_VERSION:?err}
+        REGNO_EXPLORER_COMMIT: ${REGNO_EXPLORER_COMMIT:?err}
     ports:
       - "8081:8081"
     volumes:

@@ -1,13 +1,18 @@
 #!/bin/bash
 
+if [ ! -d "docker/monerod" ]; then
+    echo "regno.sh must run in the `regno` dir - aborting."
+    exit 1
+fi
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-REGNO_CONFIG_PATH="$DIR/regno.conf"
 read dialog <<< "$(which whiptail dialog 2> /dev/null)"
+REGNO_CONFIG_PATH="$DIR/docker/regno.conf"
 
 # Make sure we run from the regno/docker dir.
 # If we don't do this, we run into very weird issues regarding docker-compose
 # and build args not being passed correctly to the override compose files' Dockerfiles.
-cd "$(dirname "${BASH_SOURCE[0]}")"
+cd "$(dirname "${BASH_SOURCE[0]}")/docker"
 
 source_file() {
   if [ -f "$1" ]; then
@@ -17,8 +22,8 @@ source_file() {
   fi
 }
 
-source_file "$DIR/.env"
-source_file "$DIR/regno.conf"
+source_file "$DIR/docker/.env"
+source_file "$DIR/docker/regno.conf"
 
 help() {
 cat <<-EOF
@@ -52,9 +57,9 @@ check_docker() {
 }
 
 print_config() {
-echo "
+echo "\
 REGNO_DOCKER_INSTALL=$REGNO_DOCKER_INSTALL
-REGNO_TOR_USAGE=$REGNO_TOR_USAGE
+REGNO_TOR_ENABLE=$REGNO_TOR_ENABLE
 REGNO_MONEROD_NETWORK=$REGNO_MONEROD_NETWORK
 REGNO_MONEROD_ENABLE=$REGNO_MONEROD_ENABLE
 REGNO_P2POOL_ENABLE=$REGNO_P2POOL_ENABLE
@@ -64,18 +69,18 @@ REGNO_EXPLORER_ENABLE=$REGNO_EXPLORER_ENABLE
 
 write_config() {
     echo "Saving configuration to $REGNO_CONFIG_PATH"
-    print_config >> "$REGNO_CONFIG_PATH"
+    print_config > "$REGNO_CONFIG_PATH"
 }
 
-setup_services() {
+setup_enable_services() {
     title="Regno Setup - Services"
-    $dialog --title "$title" --checklist "Please select the services to enable:" 25 80 15 \
+    $dialog --title "$title" --checklist --separate-output "Please select the services to enable:" 25 80 15 \
             "monerod" "Monero daemon" on \
             "tor" "Tor" on \
             "explorer" "Monero blockchain explorer" on \
             "p2pool" "P2Pool daemon" on 2>results
-
-    if [ $? -eq 0 ]; then 
+    dialogResult = $?
+    if [[ $dialogResult ]]; then 
         REGNO_MONEROD_ENABLE=no
         REGNO_EXPLORER_ENABLE=no
         REGNO_P2POOL_ENABLE=no
@@ -83,14 +88,15 @@ setup_services() {
         while read choice
         do
             case $choice in
-                monero ) REGNO_MONEROD_ENABLE=yes ;;
+                monerod ) REGNO_MONEROD_ENABLE=yes ;;
                 explorer ) REGNO_EXPLORER_ENABLE=yes ;;
                 p2pool ) REGNO_P2POOL_ENABLE=yes ;;
                 tor ) REGNO_TOR_ENABLE=yes ;;
+                * ) echo "invalid choice selected: $choice" ;;
             esac
         done < results
-        print_options
     fi
+    return $dialogResult
 }
 
 get_yaml_base_files() {
@@ -130,11 +136,11 @@ docker_build() {
     # Run builds in order so we can make use of cache while never using old base images in run files.
     yamlBaseFiles=$(get_yaml_base_files)
     echo "Starting build of all base images: $yamlBaseFiles"
-    docker-compose $yamlBaseFiles build --no-cache
+    docker-compose $yamlBaseFiles build #--no-cache
     if [[ $? -ne 0 ]]; then echo "Build failed. Aborting..." && exit 1; fi
     yamlBuildFiles=$(get_yaml_build_files)
     echo "Starting build of all build images: $yamlBuildFiles"
-    docker-compose $yamlBuildFiles build --no-cache
+    docker-compose $yamlBuildFiles build #--no-cache
     if [[ $? -ne 0 ]]; then echo "Build failed. Aborting..." && exit 1; fi
     yamlRunFiles=$(get_yaml_run_files)
     echo "Starting build of all run images: $yamlRunFiles"
@@ -173,13 +179,17 @@ restart() {
 }
 
 setup() {
-    [[ "$dialog" ]] || {
+    if ! [[ "$dialog" ]]; then
         echo "Neither 'whiptail' nor 'dialog' found. Install one of them to perform setup." >&2
         exit 1
-    }
+    fi
 
-    setup_services
+    result=setup_enable_services
+    if [[ ! $result ]]; then echo "Setup cancelled. Configuration has NOT been updated." && exit 1; fi
+
     write_config
+    docker_build
+    docker_start
 }
 
 # Clean-up (remove old docker images)

@@ -4,7 +4,6 @@
 ARG REGNO_UBUNTU_VERSION
 FROM regno-ubuntu:${REGNO_UBUNTU_VERSION}
 RUN set -e && \
-    apt-get update -q -y --no-install-recommends && \
     DEBIAN_FRONTEND="noninteractive" apt-get install -q -y --no-install-recommends \
     git \
     build-essential \
@@ -21,7 +20,9 @@ RUN set -e && \
 
 WORKDIR /usr/src/p2pool
 ARG REGNO_P2POOL_VERSION
-RUN git clone --recursive --depth 1 --branch ${REGNO_P2POOL_VERSION} --shallow-submodules https://github.com/SChernykh/p2pool.git . && \
+ARG REGNO_P2POOL_COMMIT
+RUN git clone --recursive --depth 1 --branch ${REGNO_P2POOL_VERSION} --shallow-submodules https://github.com/SChernykh/p2pool.git .
+RUN test `git rev-parse HEAD` = ${REGNO_P2POOL_COMMIT} || exit 1 && \
     mkdir build && \
     cd build && \
     cmake .. && \
@@ -31,11 +32,11 @@ FROM regno-ubuntu:${REGNO_UBUNTU_VERSION}
 COPY --from=0 /usr/src/p2pool/build/p2pool /
 
 RUN set -e && \
-    apt-get update -q -y --no-install-recommends && \
     DEBIAN_FRONTEND="noninteractive" apt-get install -q -y --no-install-recommends \
     libzmq5 \
     libuv1 \
-    && apt-get clean
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN groupadd -r p2pool -g 1000 && \
     useradd -u 1000 -r -g p2pool -s /sbin/nologin -c "p2pool user" p2pool

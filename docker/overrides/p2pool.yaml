@@ -10,6 +10,7 @@ services:
       context: ./p2pool
       args:
         REGNO_P2POOL_VERSION: ${REGNO_P2POOL_VERSION:?err}
+        REGNO_P2POOL_COMMIT: ${REGNO_P2POOL_COMMIT:?err}
         REGNO_UBUNTU_VERSION: ${REGNO_UBUNTU_VERSION:?err}
     networks:
       regnonet:

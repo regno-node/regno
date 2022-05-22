@@ -2,7 +2,7 @@ ARG REGNO_UBUNTU_VERSION
 FROM regno-ubuntu:${REGNO_UBUNTU_VERSION}
 
 ENV DEBIAN_FRONTEND="noninteractive"
-RUN apt-get update && apt-get -y install --no-install-recommends build-essential cmake \
+RUN apt-get -y install --no-install-recommends build-essential cmake \
     pkg-config libboost-all-dev libssl-dev libzmq3-dev libunbound-dev ca-certificates \
     libsodium-dev libunwind8-dev liblzma-dev libreadline6-dev libldns-dev \
     libexpat1-dev doxygen graphviz libpgm-dev qttools5-dev-tools libhidapi-dev \
