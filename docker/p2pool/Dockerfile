@@ -2,8 +2,7 @@
 # original credit to https://github.com/SChernykh/p2pool
 
 ARG REGNO_UBUNTU_VERSION
-
-FROM ubuntu:${REGNO_UBUNTU_VERSION}
+FROM regno-ubuntu:${REGNO_UBUNTU_VERSION}
 RUN set -e && \
     apt-get update -q -y --no-install-recommends && \
     DEBIAN_FRONTEND="noninteractive" apt-get install -q -y --no-install-recommends \
@@ -16,7 +15,9 @@ RUN set -e && \
     libsodium-dev \
     libpgm-dev \
     libnorm-dev \
-    libgss-dev
+    libgss-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /usr/src/p2pool
 ARG REGNO_P2POOL_VERSION
@@ -26,7 +27,7 @@ RUN git clone --recursive --depth 1 --branch ${REGNO_P2POOL_VERSION} --shallow-s
     cmake .. && \
     make -j$(nproc)
 
-FROM ubuntu:${REGNO_UBUNTU_VERSION}
+FROM regno-ubuntu:${REGNO_UBUNTU_VERSION}
 COPY --from=0 /usr/src/p2pool/build/p2pool /
 
 RUN set -e && \

@@ -5,9 +5,7 @@ ARG REGNO_MONEROD_VERSION
 FROM regno/monerod-build:${REGNO_MONEROD_VERSION} as builder
 
 # Install dependencies for xmrblocks compilation
-RUN apt-get update \
-    && apt-get upgrade -y \
-    && apt-get install -y --no-install-recommends \
+RUN apt-get install -y --no-install-recommends \
     git \
     build-essential \
     cmake \
@@ -50,7 +48,7 @@ RUN cmake .. && make -j$(nproc)
 RUN zip /lib.zip $(ldd xmrblocks | grep -E '/[^\ ]*' -o)
 
 ARG REGNO_UBUNTU_VERSION
-FROM ubuntu:${REGNO_UBUNTU_VERSION}
+FROM regno-ubuntu:${REGNO_UBUNTU_VERSION}
 
 # Added DEBIAN_FRONTEND=noninteractive to workaround tzdata prompt on installation
 ENV DEBIAN_FRONTEND="noninteractive"

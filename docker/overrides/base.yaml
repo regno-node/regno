@@ -1,0 +1,10 @@
+version: "3.7"
+
+services:
+  ubuntu:
+    container_name: regno-ubuntu
+    image: regno-ubuntu:${REGNO_UBUNTU_VERSION:?err}
+    build:
+      context: ./common
+      args:
+        REGNO_UBUNTU_VERSION: ${REGNO_UBUNTU_VERSION:?err}

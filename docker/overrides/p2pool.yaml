@@ -1,0 +1,30 @@
+version: "3.7"
+
+services:
+  p2pool:
+    container_name: regno-p2pool
+    env_file:
+      - ./.env
+    image: "regno/p2pool:${REGNO_P2POOL_VERSION:?err}"
+    build:
+      context: ./p2pool
+      args:
+        REGNO_P2POOL_VERSION: ${REGNO_P2POOL_VERSION:?err}
+        REGNO_UBUNTU_VERSION: ${REGNO_UBUNTU_VERSION:?err}
+    networks:
+      regnonet:
+        ipv4_address: ${NET_REGNO_P2POOL_IPV4:?err}
+    ports:
+      - "${P2POOL_STRATUM_PORT:?err}:3333/tcp"
+      - "37888:37888/tcp"
+      - "37889:37889/tcp"
+    volumes:
+      - data-p2pool:/home/p2pool/.p2pool:rw
+      - /dev/null:/home/p2pool/.p2pool/p2pool.log:rw
+      - /dev/hugepages:/dev/hugepages:rw
+    restart: unless-stopped
+    command: >-
+      --host monerod
+      --wallet ${P2POOL_WALLET_ADDRESS:?err}
+      --loglevel ${P2POOL_LOGLEVEL:?err}
+      ${P2POOL_MINI}

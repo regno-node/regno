@@ -1,12 +1,12 @@
 ARG REGNO_MONEROD_VERSION
 ARG REGNO_UBUNTU_VERSION
+FROM regno/monerod-build:${REGNO_MONEROD_VERSION} as builder
 
-FROM regno/monerod-build:${REGNO_MONEROD_VERSION} as build
-
-FROM ubuntu:${REGNO_UBUNTU_VERSION}
+ARG REGNO_UBUNTU_VERSION
+FROM regno-ubuntu:${REGNO_UBUNTU_VERSION}
 
 # Install remaining dependencies
-RUN apt-get update && apt-get install --no-install-recommends -y libnorm-dev libpgm-dev libgssapi-krb5-2 \
+RUN apt-get install --no-install-recommends -y libnorm-dev libpgm-dev libgssapi-krb5-2 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -17,7 +17,8 @@ USER monero
 
 # Switch to home directory and install newly built monerod binary
 WORKDIR /home/monero
-COPY --chown=monero:monero --from=build /root/monero/build/release/bin/monerod /usr/local/bin/monerod
+ARG REGNO_MONEROD_VERSION
+COPY --chown=monero:monero --from=builder /root/monero/build/release/bin/monerod /usr/local/bin/monerod
 
 # Expose p2p, RPC, and ZMQ ports
 EXPOSE 18080

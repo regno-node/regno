@@ -1,6 +1,5 @@
 ARG REGNO_UBUNTU_VERSION
-
-FROM ubuntu:${REGNO_UBUNTU_VERSION}
+FROM regno-ubuntu:${REGNO_UBUNTU_VERSION}
 
 ENV DEBIAN_FRONTEND="noninteractive"
 RUN apt-get update && apt-get -y install --no-install-recommends build-essential cmake \
@@ -8,9 +7,7 @@ RUN apt-get update && apt-get -y install --no-install-recommends build-essential
     libsodium-dev libunwind8-dev liblzma-dev libreadline6-dev libldns-dev \
     libexpat1-dev doxygen graphviz libpgm-dev qttools5-dev-tools libhidapi-dev \
     libusb-dev libprotobuf-dev protobuf-compiler libgtest-dev git \
-    libnorm-dev libpgm-dev libusb-1.0-0-dev libudev-dev libgssapi-krb5-2 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    libnorm-dev libpgm-dev libusb-1.0-0-dev libudev-dev libgssapi-krb5-2
 
 WORKDIR /usr/src/gtest
 RUN cmake . && make && cp ./lib/libgtest*.a /usr/lib
@@ -20,7 +17,6 @@ WORKDIR /root/monero
 
 # Git pull Monero source at specified tag/branch
 ARG REGNO_MONEROD_VERSION
-ARG REGNO_MONEROD_COMMIT
 RUN  git clone --recurse-submodules --shallow-submodules --depth 1 \
     --branch ${REGNO_MONEROD_VERSION} \
     https://github.com/monero-project/monero .
@@ -30,6 +26,7 @@ ENV CXXFLAGS='-fPIC'
 ENV USE_SINGLE_BUILDDIR 1
 ENV BOOST_DEBUG         1
 ARG TARGETARCH
+ARG REGNO_MONEROD_COMMIT
 RUN test `git rev-parse HEAD` = ${REGNO_MONEROD_COMMIT} || exit 1 && \
     case ${TARGETARCH:-amd64} in \
         "arm64") CMAKE_ARCH="armv8-a"; CMAKE_BUILD_TAG="linux-armv8" ;; \

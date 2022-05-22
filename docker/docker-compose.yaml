@@ -1,101 +1,10 @@
-version: "3.7"
+version: "3.2"
 
-services:
-  monerod-build:
-    container_name: regno-monerod-build
-    image: "regno/monerod-build:${REGNO_MONEROD_VERSION}"
-    build:
-      context: ./monerod-build
-      args:
-        REGNO_MONEROD_VERSION: ${REGNO_MONEROD_VERSION}
-        REGNO_UBUNTU_VERSION: ${REGNO_UBUNTU_VERSION}
-        REGNO_MONEROD_COMMIT: ${REGNO_MONEROD_COMMIT}
-    command:
-      - "exit"
-
-  monerod:
-    container_name: regno-monerod
-    image: "regno/monerod:${REGNO_MONEROD_VERSION}"
-    depends_on:
-      - regno-monerod-build
-    build:
-      context: ./monerod
-      args:
-        REGNO_MONEROD_VERSION: ${REGNO_MONEROD_VERSION}
-        REGNO_UBUNTU_VERSION: ${REGNO_UBUNTU_VERSION}
-    restart: always
-    volumes:
-      - data-monerod:/home/monero/.bitmonero
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "20m"
-        max-file: "10"
-    ports:
-      - "18080:18080"
-      - "18089:18089"
-    expose:
-      - "18080"
-      - "18081"
-      - "18083"
-      - "18089"
-    command:
-      - "--enable-dns-blocklist"
-      - "--rpc-restricted-bind-ip=0.0.0.0"
-      - "--rpc-restricted-bind-port=18089"
-      - "--p2p-bind-ip=0.0.0.0"
-      - "--p2p-bind-port=18080"
-      - "--confirm-external-bind"
-      - "--zmq-pub=tcp://0.0.0.0:18083"
-      - "--rpc-bind-ip=0.0.0.0"
-      - "--rpc-bind-port=18081"
-    networks:
-      regnonet:
-        ipv4_address: ${NET_REGNO_MONEROD_IPV4}
-
-  p2pool:
-    container_name: regno-p2pool
-    image: "regno/p2pool:${REGNO_P2POOL_VERSION}"   
-    build:
-      context: ./p2pool
-      args:
-        REGNO_P2POOL_VERSION: ${REGNO_P2POOL_VERSION}
-        REGNO_UBUNTU_VERSION: ${REGNO_UBUNTU_VERSION}
-    networks:
-      regnonet:
-        ipv4_address: ${NET_REGNO_P2POOL_IPV4}
-    ports:
-      - "${P2POOL_STRATUM_PORT}:3333/tcp"
-      - "37888:37888/tcp"
-      - "37889:37889/tcp"
-    volumes:
-      - p2pool:/home/p2pool/.p2pool:rw
-      - /dev/null:/home/p2pool/.p2pool/p2pool.log:rw
-      - /dev/hugepages:/dev/hugepages:rw
-    restart: unless-stopped
-    command: >-
-      --host monerod
-      --wallet ${P2POOL_WALLET_ADDRESS}
-      --loglevel ${P2POOL_LOGLEVEL}
-      ${P2POOL_MINI}
-
-  explorer:
-    container_name: regno-explorer
-    image: "regno/explorer:latest"
-    build:
-      context: ./explorer
-      args:
-        REGNO_MONEROD_VERSION: ${REGNO_MONEROD_VERSION}
-        REGNO_UBUNTU_VERSION: ${REGNO_UBUNTU_VERSION}
-    ports:
-      - "8081:8081"
-    volumes:
-      - data-monerod:/home/monero/.bitmonero
-    restart: unless-stopped
-    networks:
-      regnonet:
-        ipv4_address: ${NET_REGNO_EXPLORER_IPV4}
-    command: ["./xmrblocks --daemon-url=monerod:18089 --enable-json-api --enable-autorefresh-option --enable-pusher --enable-emission-monitor --enable-randomx --enable-mixin-details --enable-key-image-checker --enable-output-key-checker"]
+#services:
+#  alpinewhatever:
+#    image: "alpine:3.15"
+#    env_file:
+#      - ./.env
 
 networks:
   regnonet:
@@ -103,14 +12,14 @@ networks:
     ipam:
       driver: default
       config:
-        - subnet: 172.28.0.0/16
+        - subnet: ${REGNONET_SUBNET}
   dmznet:
     driver: bridge
     ipam:
       driver: default
       config:
-        - subnet: 172.29.0.0/16
+        - subnet: ${DMZNET_SUBNET}
 
 volumes:
   data-monerod:
-  p2pool:
+  data-p2pool:

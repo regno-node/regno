@@ -1,0 +1,20 @@
+version: "3.7"
+
+services:
+  explorer:
+    container_name: regno-explorer
+    image: "regno/explorer:latest"
+    build:
+      context: ./explorer
+      args:
+        REGNO_MONEROD_VERSION: ${REGNO_MONEROD_VERSION:?err}
+        REGNO_UBUNTU_VERSION: ${REGNO_UBUNTU_VERSION:?err}
+    ports:
+      - "8081:8081"
+    volumes:
+      - data-monerod:/home/monero/.bitmonero
+    restart: unless-stopped
+    networks:
+      regnonet:
+        ipv4_address: ${NET_REGNO_EXPLORER_IPV4:?err}
+    command: ["./xmrblocks --daemon-url=monerod:18089 --enable-json-api --enable-autorefresh-option --enable-pusher --enable-emission-monitor --enable-randomx --enable-mixin-details --enable-key-image-checker --enable-output-key-checker"]

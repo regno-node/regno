@@ -1,0 +1,40 @@
+version: "3.7"
+
+services:
+  monerod:
+    container_name: regno-monerod
+    image: regno/monerod:${REGNO_MONEROD_VERSION:?err}
+    build:
+      context: ./monerod
+      args:
+        REGNO_UBUNTU_VERSION: ${REGNO_UBUNTU_VERSION:?err}
+        REGNO_MONEROD_VERSION: ${REGNO_MONEROD_VERSION:?err}
+    restart: always
+    volumes:
+      - data-monerod:/home/monero/.bitmonero
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "10"
+    ports:
+      - "18080:18080"
+      - "18089:18089"
+    expose:
+      - "18080"
+      - "18081"
+      - "18083"
+      - "18089"
+    command:
+      - "--enable-dns-blocklist"
+      - "--rpc-restricted-bind-ip=0.0.0.0"
+      - "--rpc-restricted-bind-port=18089"
+      - "--p2p-bind-ip=0.0.0.0"
+      - "--p2p-bind-port=18080"
+      - "--confirm-external-bind"
+      - "--zmq-pub=tcp://0.0.0.0:18083"
+      - "--rpc-bind-ip=0.0.0.0"
+      - "--rpc-bind-port=18081"
+    networks:
+      regnonet:
+        ipv4_address: ${NET_REGNO_MONEROD_IPV4:?err}

@@ -1,0 +1,12 @@
+services:
+  monerod-build:
+    container_name: regno-monerod-build
+    image: "regno/monerod-build:${REGNO_MONEROD_VERSION:?err}"
+    env_file:
+      - ./.env
+    build:
+      context: ./monerod-build
+      args:
+        REGNO_MONEROD_VERSION: ${REGNO_MONEROD_VERSION:?err}
+        REGNO_MONEROD_COMMIT: ${REGNO_MONEROD_COMMIT:?err}
+        REGNO_UBUNTU_VERSION: ${REGNO_UBUNTU_VERSION:?err}
