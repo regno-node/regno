@@ -1,30 +1,61 @@
 #!/bin/bash
 
 if [ ! -d "docker/monerod" ]; then
-    echo "regno.sh must run in the `regno` dir - aborting."
+    echo "regno.sh must run in the 'regno' dir - aborting."
     exit 1
 fi
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
-read dialog <<< "$(which whiptail dialog 2> /dev/null)"
 REGNO_CONFIG_PATH="$DIR/docker/regno.conf"
 
 # Make sure we run from the regno/docker dir.
 # If we don't do this, we run into very weird issues regarding docker-compose
 # and build args not being passed correctly to the override compose files' Dockerfiles.
-cd "$(dirname "${BASH_SOURCE[0]}")/docker"
+cd "$(dirname "${BASH_SOURCE[0]}")/docker" || exit 1
 
-if [[ ! -f /var/run/docker.sock ]]; then
-    echo "Docker daemon not running. Attempting to start."
-    systemctl start docker
-    if [[ ! $? ]]; then echo "Failed to start docker, exiting..."; exit 1; fi
+read dialog -r <<< "$(which whiptail dialog gdialog kdialog 2> /dev/null)"
+
+print_config() {
+echo "\
+REGNO_TOR_ENABLE=$REGNO_TOR_ENABLE
+REGNO_MONEROD_NETWORK=$REGNO_MONEROD_NETWORK
+REGNO_MONEROD_ENABLE=$REGNO_MONEROD_ENABLE
+REGNO_P2POOL_ENABLE=$REGNO_P2POOL_ENABLE
+REGNO_EXPLORER_ENABLE=$REGNO_EXPLORER_ENABLE
+"
+}
+
+print_default_config() {
+echo "\
+REGNO_TOR_ENABLE=yes
+REGNO_MONEROD_NETWORK=mainnet
+REGNO_MONEROD_ENABLE=yes
+REGNO_P2POOL_ENABLE=yes
+REGNO_EXPLORER_ENABLE=yes
+"
+}
+
+write_config() {
+    echo "Writing updated configuration to $REGNO_CONFIG_PATH"
+    print_config > "$REGNO_CONFIG_PATH"
+}
+
+write_default_config() {
+    echo "Writing default configuration values to $REGNO_CONFIG_PATH"
+    print_default_config > "$REGNO_CONFIG_PATH"
+}
+
+if ! [[ -f "$REGNO_CONFIG_PATH" ]]; then
+    echo "No existing config found."
+    write_default_config
 fi
 
 source_file() {
   if [ -f "$1" ]; then
     source "$1"
   else
-    echo "Unable to find file $1"
+    echo "Unable to find file $1" >&2
+    exit 1
   fi
 }
 
@@ -34,48 +65,44 @@ source_file "$DIR/docker/regno.conf"
 help() {
 cat <<-EOF
 Regno management script (https://github.com/regno-node/regno)
-Usage: ./regno.sh [command] [options]
-
-Options:
-  --help, -h  Display help text
+Usage: ./regno.sh [command]
 
 Commands:
+  start       Start Regno containers using current config
   setup       Perform interactive setup
-  build       Build Regno docker images based on configuration
-  start       Start Regno
-  stop        Stop Regno
-  restart     Restart Regno
+  stop        Stop containers
+  restart     Restart containers
+  build       Build all configured docker images from scratch
+  clean       Clean up unused images/containers/networks
+  reset       Remove all images/containers/networks/volumes, and reset config file
   update      Update Regno to latest version
+
 EOF
 }
 
 check_docker() {
     if ! [[ -x "$(command -v docker)" ]]; then
-        echo "'docker' not found. Please install docker manually, then retry."
+        echo "'docker' not found. Please install docker manually, then retry." >&2
         return 1
     fi
 
     if ! [[ -x "$(command -v docker-compose)" ]]; then
-        echo "'docker-compose' not found. Please install docker-compose manually, then retry."
+        echo "'docker-compose' not found. Please install docker-compose manually, then retry." >&2
         return 1
     fi
+
+    docker version > /dev/null 2>&1
+    if [[ $? -ne 0 ]]; then
+        if [ "$OSTYPE" = linux-gnu ]; then
+            echo "Docker daemon not running. Attempting to start."
+            systemctl start docker
+            if [[ $? -ne 0 ]]; then echo "Failed to start docker, exiting..." >&2; exit 1; fi
+        else
+            echo "Docker daemon not running. Might not be able to run docker commands." >&2
+        fi
+    fi
+
     return 0
-}
-
-print_config() {
-echo "\
-REGNO_DOCKER_INSTALL=$REGNO_DOCKER_INSTALL
-REGNO_TOR_ENABLE=$REGNO_TOR_ENABLE
-REGNO_MONEROD_NETWORK=$REGNO_MONEROD_NETWORK
-REGNO_MONEROD_ENABLE=$REGNO_MONEROD_ENABLE
-REGNO_P2POOL_ENABLE=$REGNO_P2POOL_ENABLE
-REGNO_EXPLORER_ENABLE=$REGNO_EXPLORER_ENABLE
-"
-}
-
-write_config() {
-    echo "Saving configuration to $REGNO_CONFIG_PATH"
-    print_config > "$REGNO_CONFIG_PATH"
 }
 
 setup_enable_services() {
@@ -91,14 +118,14 @@ setup_enable_services() {
         REGNO_EXPLORER_ENABLE=no
         REGNO_P2POOL_ENABLE=no
         REGNO_TOR_ENABLE=no
-        while read choice
+        while read choice -r
         do
             case $choice in
                 monerod ) REGNO_MONEROD_ENABLE=yes ;;
                 explorer ) REGNO_EXPLORER_ENABLE=yes ;;
                 p2pool ) REGNO_P2POOL_ENABLE=yes ;;
                 tor ) REGNO_TOR_ENABLE=yes ;;
-                * ) echo "invalid choice selected: $choice" ;;
+                * ) echo "invalid choice selected: $choice" >&2 ;;
             esac
         done < results
     fi
@@ -111,8 +138,7 @@ get_yaml_base_files() {
 
 get_yaml_build_files() {
     yamlFiles="-f docker-compose.yaml"
-
-    if [[ "$MONEROD_ENABLE" -eq "yes" || "$EXPLORER_ENABLE" -eq "yes" ]]; then
+    if [[ "$REGNO_MONEROD_ENABLE" == "yes" || "$REGNO_EXPLORER_ENABLE" == "yes" ]]; then
         yamlFiles="$yamlFiles -f overrides/monerod-build.yaml"
     fi
 
@@ -122,15 +148,15 @@ get_yaml_build_files() {
 get_yaml_run_files() {
     yamlFiles="$yamlFiles -f docker-compose.yaml"
 
-    if [[ "$MONEROD_ENABLE" -eq "yes" ]]; then
+    if [[ "$REGNO_MONEROD_ENABLE" == "yes" ]]; then
         yamlFiles="$yamlFiles -f overrides/monerod.yaml"
     fi
 
-    if [[ "$P2POOL_ENABLE" -eq "yes" ]]; then
+    if [[ "$REGNO_P2POOL_ENABLE" == "yes" ]]; then
         yamlFiles="$yamlFiles -f overrides/p2pool.yaml"
     fi
 
-    if [[ "$EXPLORER_ENABLE" -eq "yes" ]]; then
+    if [[ "$REGNO_EXPLORER_ENABLE" == "yes" ]]; then
         yamlFiles="$yamlFiles -f overrides/explorer.yaml"
     fi
 
@@ -138,60 +164,60 @@ get_yaml_run_files() {
 }
 
 docker_build() {
-    if [[ check_docker -ne 0 ]] ; then return; fi
+    if ! check_docker; then return; fi
     # Run builds in order so we can make use of cache while never using old base images in run files.
     yamlBaseFiles=$(get_yaml_base_files)
     echo "Starting build of all base images: $yamlBaseFiles"
-    docker-compose $yamlBaseFiles build #--no-cache
-    if [[ $? -ne 0 ]]; then echo "Build failed. Aborting..." && exit 1; fi
+    docker-compose "$yamlBaseFiles" build "$@"
+    if [[ $? -ne 0 ]]; then echo "Build failed. Aborting..." >&2 && exit 1; fi
     yamlBuildFiles=$(get_yaml_build_files)
     echo "Starting build of all build images: $yamlBuildFiles"
-    docker-compose $yamlBuildFiles build #--no-cache
-    if [[ $? -ne 0 ]]; then echo "Build failed. Aborting..." && exit 1; fi
+    docker-compose "$yamlBuildFiles" build "$@"
+    if [[ $? -ne 0 ]]; then echo "Build failed. Aborting..." >&2 && exit 1; fi
     yamlRunFiles=$(get_yaml_run_files)
     echo "Starting build of all run images: $yamlRunFiles"
-    docker-compose $yamlRunFiles build --no-cache
-    if [[ $? -ne 0 ]]; then echo "Build failed. Aborting..." && exit 1; fi
+    docker-compose "$yamlRunFiles" build "$@"
+    if [[ $? -ne 0 ]]; then echo "Build failed. Aborting..." >&2 && exit 1; fi
 }
 
 docker_up() {
-    if [[ check_docker -ne 0 ]] ; then return; fi
+    if ! check_docker; then return; fi
     yamlFiles=$(get_yaml_run_files)
     eval "docker-compose $yamlFiles up -d --force-recreate --remove-orphans"
 }
 
 start() {
-    if [[ check_docker -ne 0 ]] ; then return; fi
-    isRunning=$(docker inspect --format="{{.State.Running}}" regno/monerod:$REGNO_MONEROD_VERSION 2> /dev/null)
+    echo "Starting Regno..."
+    if ! check_docker; then return; fi
+    isRunning=$(docker-compose ls -q | grep regno)
 
-    if [ $? -eq 1 ] || [ "$isRunning" == "false" ]; then
-        echo "Starting Regno."
+    if [[ $? -ne 0 ]] || [[ "$isRunning" != "regno" ]]; then
         docker_up
     else
-        echo "Regno is already running."
+        echo "Regno is already running. Maybe you meant 'restart'?"
     fi
 }
 
 stop() {
-    if [[ check_docker -ne 0 ]] ; then return; fi
+    if ! check_docker; then return; fi
     yamlFiles=$(get_yaml_run_files)
-    eval "docker-compose $yamlFiles stop"
+    eval "docker-compose $yamlFiles down"
 }
 
 restart() {
-    if check_docker; then return; fi
+    if ! check_docker; then return; fi
     stop
     docker_up
 }
 
 setup() {
-    if ! [[ "$dialog" ]]; then
-        echo "Neither 'whiptail' nor 'dialog' found. Install one of them to perform setup." >&2
+    if [[ ! "$dialog" ]]; then
+        echo "Neither 'whiptail' nor 'dialog' command was found. Please install one of them to perform setup." >&2
         exit 1
     fi
 
     setup_enable_services
-    if [[ ! $? ]]; then echo "Setup cancelled. Configuration has NOT been updated." && exit 1; fi
+    if [[ $? -ne 0 ]]; then echo "Setup cancelled. Configuration has NOT been updated." >&2 && exit 1; fi
 
     write_config
     docker_build
@@ -210,35 +236,41 @@ del_images_for() {
 }
 
 clean() {
-  del_images_for regno/ubuntu "$REGNO_UBUNTU_VERSION"
-  del_images_for regno/monerod-build "$REGNO_MONEROD_VERSION"
-  del_images_for regno/monerod "$REGNO_MONEROD_VERSION"
-  del_images_for regno/p2pool "$REGNO_P2POOL_VERSION"
-  del_images_for regno/explorer "latest"
-  docker container prune -f
-  docker volume prune -f
-  docker image prune -f
+    echo "Removing all unused Regno images, containers, and networks..."
+    del_images_for regno/ubuntu "$REGNO_UBUNTU_VERSION"
+    del_images_for regno/monerod-build "$REGNO_MONEROD_VERSION"
+    del_images_for regno/monerod "$REGNO_MONEROD_VERSION"
+    del_images_for regno/p2pool "$REGNO_P2POOL_VERSION"
+    del_images_for regno/explorer "latest"
+    docker network prune -f
+    docker container prune -f
+    docker image prune -f
 }
 
-while getopts ":h" opt; do
-    case ${opt} in
-        h )
-            help
-            exit 0
-            ;;
-        \? )
-    esac
-done
+reset() {
+    echo "This will remove all Regno images, containers, networks, volumes, and config files."
+    read -p "*** WARNING ***: This will result in losing your synced blockchain data! Are you sure you want to continue? [y/N] " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]
+    then
+        exit 1
+    fi
+    stop
+    clean
+    docker volume prune -f
+    write_default_config
+}
 
 subcommand=$1; shift
 
 case "$subcommand" in
     setup   ) setup;;
-    build   ) docker_build;;
+    build   ) docker_build --no-cache;;
     start   ) start;;
-    stop    ) docker_stop;;
-    restart ) docker_restart;;
+    stop    ) stop;;
+    restart ) restart;;
     onion   ) onion;;
     clean   ) clean;;
+    reset   ) reset;;
     *       ) help;;
 esac
