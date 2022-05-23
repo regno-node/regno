@@ -13,11 +13,12 @@ Run =./regno.sh start= to start.
 By default, Regno starts monerod, a blockchain explorer, and p2pool.
 
 * What are some pie-in-the-sky features planned for Regno?
-- Run monerod
+- Run monerod!
 - Modular: only install what you want. If you don't want a particular feature, it is not even downloaded.
 - Live dashboard with node & network info
 - Automatic creation of tor hidden services for web UI, monerod RPC, etc.
 - Easy updates (including signature verification), automatically backing up the previous version and allowing rollback if needed.
+- Blockchain explorer
 - Easy p2pool setup
 - Easy Haveno install / integration
 - Easy setup of atomic swap daemon & UI
@@ -34,7 +35,7 @@ By default, Regno starts monerod, a blockchain explorer, and p2pool.
 - Regno nodes could (if opted-in) serve as torrent seeders / IPFS nodes for the latest release?
 
 * Hardware
-Recommend ODROID HC2 with at least 1TB SSD. Support RPi 4, but discourage usage because no CPU crypto extensions (super-slow chain sync)
+Once ARM support is ready, will recommend ODROID HC2 with at least 1TB SSD. Should support RPi 4, but discourage usage because no CPU crypto extensions (super-slow chain sync)
 
 * Tech
 - Run within Docker containers, orchestrate with docker-compose & scripts
