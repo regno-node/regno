@@ -13,25 +13,29 @@ REGNO_CONFIG_PATH="$DIR/docker/regno.conf"
 # and build args not being passed correctly to the override compose files' Dockerfiles.
 cd "$(dirname "${BASH_SOURCE[0]}")/docker" || exit 1
 
-read dialog -r <<< "$(which whiptail dialog gdialog kdialog 2> /dev/null)"
+read -r dialog <<< "$(which whiptail dialog gdialog kdialog 2> /dev/null)"
 
 print_config() {
 echo "\
 REGNO_TOR_ENABLE=$REGNO_TOR_ENABLE
-REGNO_MONEROD_NETWORK=$REGNO_MONEROD_NETWORK
 REGNO_MONEROD_ENABLE=$REGNO_MONEROD_ENABLE
 REGNO_P2POOL_ENABLE=$REGNO_P2POOL_ENABLE
 REGNO_EXPLORER_ENABLE=$REGNO_EXPLORER_ENABLE
+REGNO_MONEROD_PRUNE=$REGNO_MONEROD_PRUNE
+REGNO_MONEROD_NETWORK=$REGNO_MONEROD_NETWORK
+REGNO_MONEROD_PUBLIC=$REGNO_MONEROD_PUBLIC
 "
 }
 
 print_default_config() {
 echo "\
 REGNO_TOR_ENABLE=yes
-REGNO_MONEROD_NETWORK=mainnet
 REGNO_MONEROD_ENABLE=yes
 REGNO_P2POOL_ENABLE=yes
 REGNO_EXPLORER_ENABLE=yes
+REGNO_MONEROD_PRUNE=no
+REGNO_MONEROD_NETWORK=mainnet
+REGNO_MONEROD_PUBLIC=no
 "
 }
 
@@ -118,13 +122,37 @@ setup_enable_services() {
         REGNO_EXPLORER_ENABLE=no
         REGNO_P2POOL_ENABLE=no
         REGNO_TOR_ENABLE=no
-        while read choice -r
+        while read -r choice
         do
             case $choice in
                 monerod ) REGNO_MONEROD_ENABLE=yes ;;
                 explorer ) REGNO_EXPLORER_ENABLE=yes ;;
                 p2pool ) REGNO_P2POOL_ENABLE=yes ;;
                 tor ) REGNO_TOR_ENABLE=yes ;;
+                * ) echo "invalid choice selected: $choice" >&2 ;;
+            esac
+        done < results
+    fi
+    return $dialogResult
+}
+
+setup_monerod_extra() {
+    title="Regno Setup - monerod"
+    $dialog --title "$title" --checklist --separate-output "Select extra monerod options:" 25 80 15 \
+            "prune"       "Run a pruned node (saves disk space but contributes less to the Monero network)" off \
+            "testnet"     "Run on testnet instead of mainnet (for testing)" off \
+            "public_node" "Advertise to other users they can use this nodes as a remote node" off 2>results
+    dialogResult=$?
+    if [[ $dialogResult ]]; then
+        REGNO_MONEROD_PRUNE=no
+        REGNO_MONEROD_NETWORK=mainnet
+        REGNO_MONEROD_PUBLIC=no
+        while read -r choice
+        do
+            case $choice in
+                prune ) REGNO_MONEROD_PRUNE=yes ;;
+                testnet ) REGNO_MONEROD_NETWORK=testnet ;;
+                public_node ) REGNO_MONEROD_PUBLIC=yes ;;
                 * ) echo "invalid choice selected: $choice" >&2 ;;
             esac
         done < results
@@ -168,15 +196,15 @@ docker_build() {
     # Run builds in order so we can make use of cache while never using old base images in run files.
     yamlBaseFiles=$(get_yaml_base_files)
     echo "Starting build of all base images: $yamlBaseFiles"
-    docker-compose "$yamlBaseFiles" build "$@"
+    docker-compose $yamlBaseFiles build "$@"
     if [[ $? -ne 0 ]]; then echo "Build failed. Aborting..." >&2 && exit 1; fi
     yamlBuildFiles=$(get_yaml_build_files)
     echo "Starting build of all build images: $yamlBuildFiles"
-    docker-compose "$yamlBuildFiles" build "$@"
+    docker-compose $yamlBuildFiles build "$@"
     if [[ $? -ne 0 ]]; then echo "Build failed. Aborting..." >&2 && exit 1; fi
     yamlRunFiles=$(get_yaml_run_files)
     echo "Starting build of all run images: $yamlRunFiles"
-    docker-compose "$yamlRunFiles" build "$@"
+    docker-compose $yamlRunFiles build "$@"
     if [[ $? -ne 0 ]]; then echo "Build failed. Aborting..." >&2 && exit 1; fi
 }
 
@@ -218,9 +246,13 @@ setup() {
 
     setup_enable_services
     if [[ $? -ne 0 ]]; then echo "Setup cancelled. Configuration has NOT been updated." >&2 && exit 1; fi
+    if [[ "$REGNO_MONEROD_ENABLE" == "yes" ]]; then
+        setup_monerod_extra
+        if [[ $? -ne 0 ]]; then echo "Setup cancelled. Configuration has NOT been updated." >&2 && exit 1; fi
+    fi
 
     write_config
-    docker_build
+    docker_build --no-cache
     docker_up
 }
 
