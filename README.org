@@ -5,6 +5,12 @@ The project name ("realm" in Esperanto) was chosen to reflect this goal: to beco
 
 You will be able to run Regno on a single-board-computer (ODROID, RPi4, etc), a VPS, a NUC, your desktop... etc. Dedicated hardware is encouraged but not a hard requirement.
 
+* Usage
+Run `./regno.sh setup` to choose what you would like to run.
+Run `./regno.sh start` to start.
+
+By default, Regno starts monerod, a blockhain explorer, and p2pool.
+
 * What are some pie-in-the-sky features planned for Regno?
 - Run monerod
 - Modular: only install what you want. If you don't want a particular feature, it is not even downloaded.
