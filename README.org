@@ -21,11 +21,11 @@ By default, Regno starts monerod, a blockchain explorer, and p2pool.
 - Blockchain explorer
 - Easy p2pool setup
 - Easy Haveno install / integration
-- Easy setup of atomic swap daemon & UI
 - Host your own MyMonero web wallet instance against your own monero-lws
 - Configurable through web UI (and can always config through the commandline if you prefer)
 - Optional historical data collection & graphing (connected peers, mempool info, network difficulty / target / hashrate, etc)
-- Promethus dashboard?
+- Setup of atomic swap daemon & UI
+- Run bitcoind + electrum server? (instead of using a public one for atomic swaps)
 - Automatic i2p setup?
 - Make setup even easier for small dedicated boards - provide an .img file based on Manjaro-ARM?
 - Optional IPFS node?
