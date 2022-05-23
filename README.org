@@ -1,7 +1,7 @@
 * What is the goal of Regno?
 To enable as many people as possible to run their own sovereign Monero node, along with software that integrates with Monero in a way that maximizes personal autonomy.
 
-The project name ("realm" in Esperanto) was chosen to reflect this goal: to become the master of your own realm.
+The project name ("realm" or "kingdom" in Esperanto) was chosen to reflect this goal: to become the master of your own realm.
 
 You will be able to run Regno on a single-board-computer (ODROID, RPi4, etc), a VPS, a NUC, your desktop... etc. Dedicated hardware is encouraged but not a hard requirement.
 

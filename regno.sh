@@ -193,18 +193,18 @@ get_yaml_run_files() {
 
 docker_build() {
     if ! check_docker; then return; fi
-    # Run builds in order so we can make use of cache while never using old base images in run files.
+    # Run builds in order so we can make use of parallel building while also never using old base images in run files.
     yamlBaseFiles=$(get_yaml_base_files)
     echo "Starting build of all base images: $yamlBaseFiles"
-    docker-compose $yamlBaseFiles build "$@"
+    docker-compose $yamlBaseFiles build --parallel "$@"
     if [[ $? -ne 0 ]]; then echo "Build failed. Aborting..." >&2 && exit 1; fi
     yamlBuildFiles=$(get_yaml_build_files)
     echo "Starting build of all build images: $yamlBuildFiles"
-    docker-compose $yamlBuildFiles build "$@"
+    docker-compose $yamlBuildFiles build --parallel "$@"
     if [[ $? -ne 0 ]]; then echo "Build failed. Aborting..." >&2 && exit 1; fi
     yamlRunFiles=$(get_yaml_run_files)
     echo "Starting build of all run images: $yamlRunFiles"
-    docker-compose $yamlRunFiles build "$@"
+    docker-compose $yamlRunFiles build --parallel "$@"
     if [[ $? -ne 0 ]]; then echo "Build failed. Aborting..." >&2 && exit 1; fi
 }
 
