@@ -1,11 +1,5 @@
 version: "3.2"
 
-#services:
-#  alpinewhatever:
-#    image: "alpine:3.15"
-#    env_file:
-#      - ./.env
-
 networks:
   regnonet:
     driver: bridge
@@ -23,3 +17,4 @@ networks:
 volumes:
   data-monerod:
   data-p2pool:
+  data-tor:

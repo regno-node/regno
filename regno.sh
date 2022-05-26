@@ -176,6 +176,10 @@ get_yaml_build_files() {
 get_yaml_run_files() {
     yamlFiles="$yamlFiles -f docker-compose.yaml"
 
+    if [[ "$REGNO_TOR_ENABLE" == "yes" ]]; then
+        yamlFiles="$yamlFiles -f overrides/tor.yaml"
+    fi
+
     if [[ "$REGNO_MONEROD_ENABLE" == "yes" ]]; then
         yamlFiles="$yamlFiles -f overrides/monerod.yaml"
     fi
