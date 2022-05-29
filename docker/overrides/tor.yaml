@@ -1,7 +1,7 @@
 services:
   tor:
     image: "regno/regno-tor:${REGNO_TOR_VERSION}"
-    container_name: tor
+    container_name: regno-tor
     build:
       context: ./tor
     restart: always
