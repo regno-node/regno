@@ -15,6 +15,7 @@ RUN set -e && \
     libpgm-dev \
     libnorm-dev \
     libgss-dev \
+    libcurl4-openssl-dev \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -35,6 +36,7 @@ RUN set -e && \
     DEBIAN_FRONTEND="noninteractive" apt-get install -q -y --no-install-recommends \
     libzmq5 \
     libuv1 \
+    libcurl4 \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
