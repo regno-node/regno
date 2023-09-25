@@ -1,7 +1,5 @@
 * What is the goal of Regno?
-To enable as many people as possible to run their own sovereign Monero node, along with software that integrates with Monero in a way that maximizes personal autonomy.
-
-The project name ("realm" or "kingdom" in Esperanto) was chosen to reflect this goal: to become the master of your own realm.
+To enable as many people as possible to run & understand their own Monero node, along with other optional software that is complimentary to Monero.
 
 You will be able to run Regno on a single-board-computer (ODROID, RPi4, etc), a VPS, a NUC, your desktop... etc. Dedicated hardware is encouraged but not a hard requirement.
 
@@ -30,18 +28,14 @@ By default, Regno starts monerod, a blockchain explorer, and p2pool.
 - Make setup even easier for small dedicated boards - provide an .img file based on Manjaro-ARM?
 - Optional IPFS node?
 
-* Distribution
-- Github releases
-- Regno nodes could (if opted-in) serve as torrent seeders / IPFS nodes for the latest release?
-
 * Hardware
 Once ARM support is ready, will recommend ODROID HC2 with at least 1TB SSD. Should support RPi 4, but discourage usage because no CPU crypto extensions (super-slow chain sync)
 
 * Tech
-- Run within Docker containers, orchestrate with docker-compose & scripts
-- Postgresql to store historical data, using LISTEN and NOTIFY to update live. Or can we get away with sqlite?
-- Phoenix LiveView frontend, with some updates coming from backend and some from postgresql
-- Elixir backend for interacting with monerod RPC, and storing historical data in postgres
+- Run within Docker containers, "orchestrate" with docker-compose & scripts
+- sqlite to store historical data
+- Phoenix LiveView frontend
+- Elixir backend for interacting with monerod RPC, and storing historical data in sqlite
 - bash for all setup scripts
 - Nginx to sit in front of all web stuff
 - Fail2ban to sit in front of all exposed network stuff
