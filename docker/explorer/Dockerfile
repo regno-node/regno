@@ -43,6 +43,7 @@ RUN git clone --depth 1 --branch master \
     https://github.com/moneroexamples/onion-monero-blockchain-explorer.git \
     /root/onion-monero-blockchain-explorer
 WORKDIR /root/onion-monero-blockchain-explorer/build
+RUN git checkout ${REGNO_EXPLORER_COMMIT}
 RUN test `git rev-parse HEAD` = ${REGNO_EXPLORER_COMMIT} || exit 1 && \
     cmake .. && make -j$(nproc)
 
