@@ -1,10 +1,11 @@
 #!/bin/bash
 
-if [ ! -d "docker/monerod" ]; then
-    echo "regno.sh must run in the 'regno' dir - aborting."
-    exit 1
-fi
+#if [ ! -d "docker/monerod" ]; then
+#    echo "regno.sh must run in the 'regno' dir - aborting."
+#    exit 1
+#fi
 
+cd "$(dirname "${BASH_SOURCE[0]}")"
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 REGNO_CONFIG_PATH="$DIR/docker/regno.conf"
 
