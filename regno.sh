@@ -202,40 +202,34 @@ docker_build() {
     # Run builds in order so we can make use of parallel building while also never using old base images in run files.
     yamlBaseFiles=$(get_yaml_base_files)
     echo "Starting build of all base images: $yamlBaseFiles"
-    docker-compose $yamlBaseFiles build --parallel "$@"
+    docker compose $yamlBaseFiles build --parallel "$@"
     if [[ $? -ne 0 ]]; then echo "Build failed. Aborting..." >&2 && exit 1; fi
     yamlBuildFiles=$(get_yaml_build_files)
     echo "Starting build of all build images: $yamlBuildFiles"
-    docker-compose $yamlBuildFiles build --parallel "$@"
+    docker compose $yamlBuildFiles build --parallel "$@"
     if [[ $? -ne 0 ]]; then echo "Build failed. Aborting..." >&2 && exit 1; fi
     yamlRunFiles=$(get_yaml_run_files)
     echo "Starting build of all run images: $yamlRunFiles"
-    docker-compose $yamlRunFiles build --parallel "$@"
+    docker compose $yamlRunFiles build --parallel "$@"
     if [[ $? -ne 0 ]]; then echo "Build failed. Aborting..." >&2 && exit 1; fi
 }
 
 docker_up() {
     if ! check_docker; then return; fi
     yamlFiles=$(get_yaml_run_files)
-    eval "docker-compose $yamlFiles up -d --force-recreate --remove-orphans"
+    eval "docker compose $yamlFiles up -d --force-recreate --remove-orphans"
 }
 
 start() {
     echo "Starting Regno..."
     if ! check_docker; then return; fi
-    isRunning=$(docker-compose ls -q | grep regno)
-
-    if [[ $? -ne 0 ]] || [[ "$isRunning" != "regno" ]]; then
-        docker_up
-    else
-        echo "Regno is already running. Maybe you meant 'restart'?"
-    fi
+    docker_up
 }
 
 stop() {
     if ! check_docker; then return; fi
     yamlFiles=$(get_yaml_run_files)
-    eval "docker-compose $yamlFiles down"
+    eval "docker compose $yamlFiles down"
 }
 
 restart() {
