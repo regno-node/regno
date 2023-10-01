@@ -81,13 +81,14 @@ Commands:
   clean       Clean up unused images/containers/networks
   reset       Remove all images/containers/networks/volumes, and reset config file
   update      Update Regno to latest version
+  sync        Bring up any missing enabled containers & remove any running disabled containers
 
 EOF
 }
 
 check_docker() {
     if ! [[ -x "$(command -v docker)" ]]; then
-        echo "'docker' not found. Please install docker manually, then retry." >&2
+        echo "Command 'docker' not found. Please install docker, then retry." >&2
         return 1
     fi
 
@@ -103,7 +104,7 @@ check_docker() {
             systemctl start docker
             if [[ $? -ne 0 ]]; then echo "Failed to start docker, exiting..." >&2; exit 1; fi
         else
-            echo "Docker daemon not running. Might not be able to run docker commands." >&2
+            echo "Docker daemon not running. Please start it and try again." >&2
         fi
     fi
 
@@ -243,6 +244,23 @@ restart() {
     docker_up
 }
 
+sync_containers() {
+    running_containers=$(docker compose -p regno ps -q)
+    yamlRunFiles=$(get_yaml_run_files)
+    echo "Bringing up any enabled containers."
+    docker-compose $yamlRunFiles up -d
+    enabled_containers=$(docker compose -p regno ps -q)
+    obsolete_containers=$(comm -23 <(echo "$running_containers") <(echo "$enabled_containers"))
+
+    if [ ! -z "$obsolete_containers" ]; then
+      echo "Stopping all disabled containers."
+      docker stop $obsolete_containers
+      docker rm $obsolete_containers
+    else
+      echo "No disabled containers were running."
+    fi
+}
+
 setup() {
     if [[ ! "$dialog" ]]; then
         echo "Neither 'whiptail' nor 'dialog' command was found. Please install one of them to perform setup." >&2
@@ -309,5 +327,6 @@ case "$subcommand" in
     onion   ) onion;;
     clean   ) clean;;
     reset   ) reset;;
+    sync    ) sync_containers;;
     *       ) help;;
 esac
