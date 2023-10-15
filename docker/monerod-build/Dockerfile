@@ -20,8 +20,9 @@ RUN set -ex && wget https://github.com/libexpat/libexpat/releases/download/R_2_4
     rm expat-2.4.8.tar.bz2 && \
     cd expat-2.4.8 && \
     ./configure --enable-static --disable-shared --prefix=/usr && \
-    make -j${NPROC:-$(nproc)} && \
-    make -j${NPROC:-$(nproc)} install
+    NJOBS=$( [ "$(nproc)" -gt 1 ] && echo "$(expr $(nproc) - 1)" || echo 1 ) && \
+    make -j$NJOBS && \
+    make -j$NJOBS install
 
 # Build libunbound for static builds
 WORKDIR /tmp
@@ -31,8 +32,9 @@ RUN set -ex && wget https://www.nlnetlabs.nl/downloads/unbound/unbound-1.16.1.ta
     rm unbound-1.16.1.tar.gz && \
     cd unbound-1.16.1 && \
     ./configure --disable-shared --enable-static --without-pyunbound --with-libexpat=/usr --with-ssl=/usr --with-libevent=no --without-pythonmodule --disable-flto --with-pthreads --with-libunbound-only --with-pic && \
-    make -j${NPROC:-$(nproc)} && \
-    make -j${NPROC:-$(nproc)} install
+    NJOBS=$( [ "$(nproc)" -gt 1 ] && echo "$(expr $(nproc) - 1)" || echo 1 ) && \
+    make -j$NJOBS && \
+    make -j$NJOBS install
 
 
 # Switch to Monero source directory
@@ -58,6 +60,7 @@ RUN test `git rev-parse HEAD` = ${REGNO_MONEROD_COMMIT} || exit 1 && \
     esac \
     && mkdir -p build/release && cd build/release \
     && cmake -D ARCH=${CMAKE_ARCH} -D STATIC=ON -D BUILD_64=ON -D CMAKE_BUILD_TYPE=Release -D BUILD_TAG=${CMAKE_BUILD_TAG} ../.. \
-    && cd /root/monero && nice -n 19 ionice -c2 -n7 make -j$(nproc) -C build/release
+    && NJOBS=$( [ "$(nproc)" -gt 1 ] && echo "$(expr $(nproc) - 1)" || echo 1 ) \
+    && cd /root/monero && nice -n 19 ionice -c2 -n7 make -j$NJOBS -C build/release
 
 ENTRYPOINT ["/bin/sh"]

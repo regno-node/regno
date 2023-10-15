@@ -45,7 +45,8 @@ RUN git clone --depth 1 --branch master \
 WORKDIR /root/onion-monero-blockchain-explorer/build
 RUN git checkout ${REGNO_EXPLORER_COMMIT}
 RUN test `git rev-parse HEAD` = ${REGNO_EXPLORER_COMMIT} || exit 1 && \
-    cmake .. && make -j$(nproc)
+    NJOBS=$( [ "$(nproc)" -gt 1 ] && echo "$(expr $(nproc) - 1)" || echo 1 ) && \
+    cmake .. && make -j$NJOBS
 
 # Use ldd and awk to bundle up dynamic libraries for the final image
 RUN zip /lib.zip $(ldd xmrblocks | grep -E '/[^\ ]*' -o)

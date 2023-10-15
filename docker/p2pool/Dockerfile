@@ -27,7 +27,8 @@ RUN test `git rev-parse HEAD` = ${REGNO_P2POOL_COMMIT} || exit 1 && \
     mkdir build && \
     cd build && \
     cmake .. && \
-    make -j$(nproc)
+    NJOBS=$( [ "$(nproc)" -gt 1 ] && echo "$(expr $(nproc) - 1)" || echo 1 ) && \
+    make -j$NJOBS
 
 FROM regno-ubuntu:${REGNO_UBUNTU_VERSION}
 COPY --from=0 /usr/src/p2pool/build/p2pool /
