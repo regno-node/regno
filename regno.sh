@@ -1,20 +1,19 @@
 #!/bin/bash
 
-#if [ ! -d "docker/monerod" ]; then
-#    echo "regno.sh must run in the 'regno' dir - aborting."
-#    exit 1
-#fi
-
 cd "$(dirname "${BASH_SOURCE[0]}")"
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 REGNO_CONFIG_PATH="$DIR/docker/regno.conf"
 
 # Make sure we run from the regno/docker dir.
-# If we don't do this, we run into very weird issues regarding docker-compose
+# If we don't make sure, we can run into very weird issues regarding docker-compose
 # and build args not being passed correctly to the override compose files' Dockerfiles.
 cd "$(dirname "${BASH_SOURCE[0]}")/docker" || exit 1
 
 read -r dialog <<< "$(which whiptail dialog gdialog kdialog 2> /dev/null)"
+
+serviceNames=("tor" "monerod" "p2pool" "explorer")
+servicesEnabled=("REGNO_TOR_ENABLE" "REGNO_MONEROD_ENABLE" "REGNO_P2POOL_ENABLE" "REGNO_EXPLORER_ENABLE")
+serviceYamlFiles=("overrides/tor.yaml" "overrides/monerod.yaml" "overrides/p2pool.yaml" "overrides/explorer.yaml")
 
 print_config() {
 echo "\
@@ -64,8 +63,13 @@ source_file() {
   fi
 }
 
-source_file "$DIR/docker/.env"
-source_file "$DIR/docker/regno.conf"
+
+reload_config() {
+    source_file "$REGNO_CONFIG_PATH"
+    source_file "$DIR/docker/.env"
+}
+
+reload_config
 
 help() {
 cat <<-EOF
@@ -100,9 +104,18 @@ check_docker() {
     docker version > /dev/null 2>&1
     if [[ $? -ne 0 ]]; then
         if [ "$OSTYPE" = linux-gnu ]; then
-            echo "Docker daemon not running. Attempting to start."
-            systemctl start docker
-            if [[ $? -ne 0 ]]; then echo "Failed to start docker, exiting..." >&2; exit 1; fi
+            if tty -s || [[ $(whoami) = "root" ]]; then
+                echo "Docker daemon not running. Attempting to start."
+                if [[ $(whoami) = "root" ]]; then
+                    systemctl start docker
+                else
+                    sudo systemctl start docker
+                fi
+                if [[ $? -ne 0 ]]; then echo "Failed to start docker, exiting..." >&2; exit 1; fi
+            else
+                echo "Docker daemon not running and not running in interactive mode. Exiting."
+                exit 1
+            fi
         else
             echo "Docker daemon not running. Please start it and try again." >&2
         fi
@@ -112,13 +125,13 @@ check_docker() {
 }
 
 setup_enable_services() {
-    title="Regno Setup - Services"
+    local title="Regno Setup - Services"
     $dialog --title "$title" --checklist --separate-output "Please select the services to enable:" 25 80 15 \
             "monerod" "Monero daemon" on \
             "tor" "Tor" on \
             "explorer" "Monero blockchain explorer" on \
             "p2pool" "P2Pool daemon" on 2>results
-    dialogResult=$?
+    local dialogResult=$?
     if [[ $dialogResult ]]; then 
         REGNO_MONEROD_ENABLE=no
         REGNO_EXPLORER_ENABLE=no
@@ -139,12 +152,12 @@ setup_enable_services() {
 }
 
 setup_monerod_extra() {
-    title="Regno Setup - monerod"
+    local title="Regno Setup - monerod"
     $dialog --title "$title" --checklist --separate-output "Select extra monerod options:" 25 80 15 \
-            "prune"       "Run a pruned node (saves disk space but contributes less to the Monero network)" off \
+            "prune"       "Run a pruned node (saves disk space but contributes less to the network. also disables p2pool observer)" off \
             "testnet"     "Run on testnet instead of mainnet (for testing)" off \
-            "public_node" "Advertise to other users they can use this nodes as a remote node" off 2>results
-    dialogResult=$?
+            "public_node" "Advertise to others that they can use this monerod as a remote node" off 2>results
+    local dialogResult=$?
     if [[ $dialogResult ]]; then
         REGNO_MONEROD_PRUNE=no
         REGNO_MONEROD_NETWORK=mainnet
@@ -163,10 +176,12 @@ setup_monerod_extra() {
 }
 
 get_yaml_base_files() {
+    reload_config
     echo "-f docker-compose.yaml -f overrides/base.yaml"
 }
 
 get_yaml_build_files() {
+    reload_config
     yamlFiles="-f docker-compose.yaml"
     if [[ "$REGNO_MONEROD_ENABLE" == "yes" || "$REGNO_EXPLORER_ENABLE" == "yes" ]]; then
         yamlFiles="$yamlFiles -f overrides/monerod-build.yaml"
@@ -176,6 +191,7 @@ get_yaml_build_files() {
 }
 
 get_yaml_run_files() {
+    reload_config
     yamlFiles="$yamlFiles -f docker-compose.yaml"
 
     if [[ "$REGNO_TOR_ENABLE" == "yes" ]]; then
@@ -200,15 +216,15 @@ get_yaml_run_files() {
 docker_build() {
     if ! check_docker; then return; fi
     # Run builds in order so we can make use of parallel building while also never using old base images in run files.
-    yamlBaseFiles=$(get_yaml_base_files)
+    local yamlBaseFiles=$(get_yaml_base_files)
     echo "Starting build of all base images: $yamlBaseFiles"
     docker compose $yamlBaseFiles build --parallel "$@"
     if [[ $? -ne 0 ]]; then echo "Build failed. Aborting..." >&2 && exit 1; fi
-    yamlBuildFiles=$(get_yaml_build_files)
+    local yamlBuildFiles=$(get_yaml_build_files)
     echo "Starting build of all build images: $yamlBuildFiles"
     docker compose $yamlBuildFiles build --parallel "$@"
     if [[ $? -ne 0 ]]; then echo "Build failed. Aborting..." >&2 && exit 1; fi
-    yamlRunFiles=$(get_yaml_run_files)
+    local yamlRunFiles=$(get_yaml_run_files)
     echo "Starting build of all run images: $yamlRunFiles"
     docker compose $yamlRunFiles build --parallel "$@"
     if [[ $? -ne 0 ]]; then echo "Build failed. Aborting..." >&2 && exit 1; fi
@@ -216,43 +232,111 @@ docker_build() {
 
 docker_up() {
     if ! check_docker; then return; fi
-    yamlFiles=$(get_yaml_run_files)
-    eval "docker compose $yamlFiles up -d --force-recreate --remove-orphans"
+    local yamlFiles=$(get_yaml_run_files)
+    docker compose $yamlFiles up -d --remove-orphans "$@"
 }
 
 start() {
     echo "Starting Regno..."
-    if ! check_docker; then return; fi
-    docker_up
+    docker_up "$@"
 }
 
 stop() {
     if ! check_docker; then return; fi
-    yamlFiles=$(get_yaml_run_files)
-    eval "docker compose $yamlFiles down"
+    local yamlFiles=$(get_yaml_run_files)
+    docker compose $yamlFiles stop "$@"
 }
 
-restart() {
+down() {
     if ! check_docker; then return; fi
-    stop
+    local yamlFiles=$(get_yaml_run_files)
+    docker compose $yamlFiles down
+}
+
+full_restart() {
+    down
     docker_up
 }
 
-sync_containers() {
-    running_containers=$(docker compose -p regno ps -q)
-    yamlRunFiles=$(get_yaml_run_files)
-    echo "Bringing up any enabled containers."
-    docker-compose $yamlRunFiles up -d
-    enabled_containers=$(docker compose -p regno ps -q)
-    obsolete_containers=$(comm -23 <(echo "$running_containers") <(echo "$enabled_containers"))
-
-    if [ ! -z "$obsolete_containers" ]; then
-      echo "Stopping all disabled containers."
-      docker stop $obsolete_containers
-      docker rm $obsolete_containers
+logs() {
+    local yamlFiles=$(get_yaml_run_files)
+    if [[ -z "$1" ]]; then
+        docker compose $yamlFiles logs -f
     else
-      echo "No disabled containers were running."
+        docker compose $yamlFiles logs "$1" -f | cut -d '|' -f 2- | sed 's/^ //'
     fi
+}
+
+printcmd() {
+    local yamlFiles=$(get_yaml_run_files)
+    echo "docker compose $yamlFiles"
+}
+
+status() {
+    if ! check_docker; then return; fi
+    docker compose -p regno ps
+}
+
+toggle_var() {
+  local service_name=$1
+  local new_value=$2
+
+  # Find the corresponding env var for the service name
+  for i in "${!serviceNames[@]}"; do
+    if [ "${serviceNames[$i]}" == "$service_name" ]; then
+      local env_var="${servicesEnabled[$i]}"
+      break
+    fi
+  done
+
+  if [ -z "$env_var" ]; then
+    echo "Service ${service_name} not found."
+    exit 1
+  fi
+
+  # Check if the environment variable exists in the file before modifying it
+  if ! grep -q "^${env_var}=" "$REGNO_CONFIG_PATH"; then
+    echo "Environment variable not found in file."
+    exit 1  # Exit the script with a non-zero status code
+  fi
+
+  local temp_file=$(mktemp)
+  sed "s/^${env_var}=.*$/${env_var}=${new_value}/" "$REGNO_CONFIG_PATH" > "$temp_file" && mv "$temp_file" "$REGNO_CONFIG_PATH"
+}
+
+enable() {
+  if [ $# -eq 0 ]; then
+    echo "Must pass a service to enable."
+    exit 1
+  fi
+  for service_name in "$@"; do
+    echo "Enabling service: $service_name"
+    toggle_var "$service_name" "yes"
+  done
+  docker_up
+}
+
+disable() {
+  if [ $# -eq 0 ]; then
+    echo "Must pass a service to disable."
+    exit 1
+  fi
+  for service_name in "$@"; do
+    echo "Disabling service: $service_name"
+    toggle_var "$service_name" "no"
+  done
+  docker_up
+}
+
+list() {
+  echo "${serviceNames[@]}"
+}
+
+config() {
+    local env_var=$1
+    local new_value=$2
+    # Need to decide if service-specific options need to go in the service
+    # Also how to handle dependencies. P2pool observer needs a non-pruned node...
 }
 
 setup() {
@@ -269,7 +353,7 @@ setup() {
     fi
 
     write_config
-    docker_build --no-cache
+    docker_build
     docker_up
 }
 
@@ -313,14 +397,21 @@ reset() {
 subcommand=$1; shift
 
 case "$subcommand" in
-    setup   ) setup;;
-    build   ) docker_build --no-cache;;
-    start   ) start;;
-    stop    ) stop;;
-    restart ) restart;;
-    onion   ) onion;;
-    clean   ) clean;;
-    reset   ) reset;;
-    sync    ) sync_containers;;
-    *       ) help;;
+    setup        ) setup;;
+    start        ) start "$@";;
+    stop         ) stop "$@";;
+    build        ) docker_build;;
+    cleanbuild   ) docker_build --no-cache;;
+    restart      ) restart;;
+    enable       ) enable "$@";;
+    disable      ) disable "$@";;
+    onion        ) onion;;
+    clean        ) clean;;
+    reset        ) reset;;
+    sync         ) sync_containers;;
+    status       ) status;;
+    list         ) list;;
+    logs         ) logs "$1";;
+    printcmd     ) printcmd;;
+    *            ) help;;
 esac
