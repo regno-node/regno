@@ -33,6 +33,7 @@ Run `./regno.sh start` to start.
 - 🔧 Build & run tor image from source
 - 🔧 Modular: easy to extend & add more configurable services
 - ✅ Live dashboard with node & network info
+- 🔧 Modular: Regno UI acts as a central hub for enabled service UIs
 - 🔧 Configurable through web UI (can always manage through commandline if you prefer)
 - 🔧 Automatic creation of tor hidden services for services where that would be useful
 - 🔧 Easy update process, automatically backing up the previous version and allowing rollback if needed.
