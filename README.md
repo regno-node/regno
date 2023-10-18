@@ -46,8 +46,6 @@ Run `./regno.sh start` to start.
 - Phoenix LiveView frontend
 - Elixir backend for interacting with monerod RPC, and storing historical data in sqlite
 - bash for all setup scripts
-- Nginx to sit in front of all web stuff
-- Fail2ban to sit in front of all exposed network stuff
 
 # Licensing
 - MIT
