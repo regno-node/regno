@@ -11,6 +11,8 @@ For those who want to:
 # What is the goal of Regno?
 To enable as many people as possible to run & understand their own Monero node, along with other optional software that is highly complimentary to Monero.
 
+To achieve this, Regno integrates the very best software from across the Monero ecosystem into a single usable project, all in an open and modular manner.
+
 # Prerequesites
 - bash
 - docker engine
