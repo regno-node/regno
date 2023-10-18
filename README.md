@@ -30,6 +30,7 @@ Run `./regno.sh start` to start.
 - 🔧 Build & run monero-lws image from source
 - 🔧 Build & run Haveno image from source
 - 🔧 Build & run tor image from source
+- ✅ Inspect monerod status through web UI
 - 🔧 Configurable through web UI (can always manage through commandline if you prefer)
 - 🔧 Automatic creation of tor hidden services for services where that would be useful
 - ✅ Modular: only install what you want. If you don't want a particular service, it is not even downloaded.
