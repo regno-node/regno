@@ -1,7 +1,7 @@
 # Who is Regno for?
 For those who want to:
 - Run your own Monero node
-- Run your own p2pool, block explorer, light-wallet server, and/or atomic swap daemon
+- Run your own p2pool, block explorer, light-wallet server, and/or atomic swap daemon, etc
 - Have it all configured by default to work together
 - Manage it all either via a script or via a web UI
 - Locally build your own docker images from each project's source code, automatically
