@@ -23,6 +23,7 @@ Run `./regno.sh setup` to go through the first-time setup wizard, and build any 
 Run `./regno.sh start` to start.
 
 # What are some pie-in-the-sky features planned for Regno?
+- ✅ Modular: only install what you want. If you don't want a particular service, it is not even downloaded.
 - ✅ Build & run monerod image from source
 - ✅ Build & run p2pool image from source
 - 🔧 Build & run p2pool-observer image from source
@@ -30,16 +31,16 @@ Run `./regno.sh start` to start.
 - 🔧 Build & run monero-lws image from source
 - 🔧 Build & run Haveno image from source
 - 🔧 Build & run tor image from source
-- ✅ Inspect monerod status through web UI
+- 🔧 Modular: easy to extend & add more configurable services
+- ✅ Live dashboard with node & network info
 - 🔧 Configurable through web UI (can always manage through commandline if you prefer)
 - 🔧 Automatic creation of tor hidden services for services where that would be useful
-- ✅ Modular: only install what you want. If you don't want a particular service, it is not even downloaded.
-- ✅ Live dashboard with node & network info
-- 🔧 Easy updates (including signature verification), automatically backing up the previous version and allowing rollback if needed.
+- 🔧 Easy update process, automatically backing up the previous version and allowing rollback if needed.
 - 🔧 Easy p2pool setup
 - ❔ Optional historical data collection & graphing (connected peers, mempool info, network difficulty / target / hashrate, etc)
 - ❔ Setup of atomic swap daemon & UI
 - ❔ Run bitcoind + electrum server? (instead of using a public one for atomic swaps)
+- ❔ Build & run nerostr image from source
 
 # Tech
 - Run within Docker containers, "orchestrate" with docker-compose & scripts
