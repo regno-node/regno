@@ -23,12 +23,13 @@ Run `./regno.sh setup` to go through the first-time setup wizard, and build any 
 Run `./regno.sh start` to start.
 
 # What are some pie-in-the-sky features planned for Regno?
-- ✅ Build & run monerod from source
-- ✅ Build & run p2pool from source
-- ✅ Build & run onion-monero-blockchain-explorer from source
-- 🔧 Build & run monero-lws from source
-- 🔧 Build & run Haveno from source
-- 🔧 Build & run tor from source
+- ✅ Build & run monerod image from source
+- ✅ Build & run p2pool image from source
+- 🔧 Build & run p2pool-observer image from source
+- ✅ Build & run onion-monero-blockchain-explorer image from source
+- 🔧 Build & run monero-lws image from source
+- 🔧 Build & run Haveno image from source
+- 🔧 Build & run tor image from source
 - 🔧 Configurable through web UI (can always manage through commandline if you prefer)
 - 🔧 Automatic creation of tor hidden services for services where that would be useful
 - ✅ Modular: only install what you want. If you don't want a particular service, it is not even downloaded.
